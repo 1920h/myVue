@@ -1,7 +1,7 @@
-// import { isRef, ref } from '../src/ref'
-import { isReactive, reactive } from '../reactive'
+import { isRef, ref } from '../ref'
+import { isReactive, markRaw, reactive, toRaw } from '../reactive'
 import { describe, test, expect } from 'vitest'
-// import { computed } from '../src/computed'
+import { computed } from '../computed'
 import { effect } from '../effect'
 
 describe('reactivity/reactive', () => {
@@ -72,167 +72,171 @@ describe('reactivity/reactive', () => {
     expect(dummy).toBe(false)
   })
 
-  // test('observing subtypes of WeakCollections(WeakMap, WeakSet)', () => {
-  //   // subtypes of WeakMap
-  //   class CustomMap extends WeakMap {}
-  //   const cmap = reactive(new CustomMap())
+  test('observing subtypes of WeakCollections(WeakMap, WeakSet)', () => {
+    // subtypes of WeakMap
+    class CustomMap extends WeakMap {}
+    const cmap = reactive(new CustomMap())
 
-  //   expect(cmap).toBeInstanceOf(WeakMap)
-  //   expect(isReactive(cmap)).toBe(true)
+    expect(cmap).toBeInstanceOf(WeakMap)
+    expect(isReactive(cmap)).toBe(true)
 
-  //   const key = {}
-  //   cmap.set(key, {})
-  //   expect(isReactive(cmap.get(key))).toBe(true)
+    const key = {}
+    cmap.set(key, {})
+    expect(isReactive(cmap.get(key))).toBe(true)
 
-  //   // subtypes of WeakSet
-  //   class CustomSet extends WeakSet {}
-  //   const cset = reactive(new CustomSet())
+    // subtypes of WeakSet
+    class CustomSet extends WeakSet {}
+    const cset = reactive(new CustomSet())
 
-  //   expect(cset).toBeInstanceOf(WeakSet)
-  //   expect(isReactive(cset)).toBe(true)
+    expect(cset).toBeInstanceOf(WeakSet)
+    expect(isReactive(cset)).toBe(true)
 
-  //   let dummy
-  //   effect(() => (dummy = cset.has(key)))
-  //   expect(dummy).toBe(false)
-  //   cset.add(key)
-  //   expect(dummy).toBe(true)
-  //   cset.delete(key)
-  //   expect(dummy).toBe(false)
-  // })
+    let dummy
+    effect(() => (dummy = cset.has(key)))
+    expect(dummy).toBe(false)
+    cset.add(key)
+    expect(dummy).toBe(true)
+    cset.delete(key)
+    expect(dummy).toBe(false)
+  })
 
-  // test('observed value should proxy mutations to original (Object)', () => {
-  //   const original: any = { foo: 1 }
-  //   const observed = reactive(original)
-  //   // set
-  //   observed.bar = 1
-  //   expect(observed.bar).toBe(1)
-  //   expect(original.bar).toBe(1)
-  //   // delete
-  //   delete observed.foo
-  //   expect('foo' in observed).toBe(false)
-  //   expect('foo' in original).toBe(false)
-  // })
+  test('observed value should proxy mutations to original (Object)', () => {
+    const original: any = { foo: 1 }
+    const observed = reactive(original)
+    // set
+    observed.bar = 1
+    expect(observed.bar).toBe(1)
+    expect(original.bar).toBe(1)
+    // delete
+    delete observed.foo
+    expect('foo' in observed).toBe(false)
+    expect('foo' in original).toBe(false)
+  })
 
-  // test('original value change should reflect in observed value (Object)', () => {
-  //   const original: any = { foo: 1 }
-  //   const observed = reactive(original)
-  //   // set
-  //   original.bar = 1
-  //   expect(original.bar).toBe(1)
-  //   expect(observed.bar).toBe(1)
-  //   // delete
-  //   delete original.foo
-  //   expect('foo' in original).toBe(false)
-  //   expect('foo' in observed).toBe(false)
-  // })
+  test('original value change should reflect in observed value (Object)', () => {
+    const original: any = { foo: 1 }
+    const observed = reactive(original)
+    // set
+    original.bar = 1
+    expect(original.bar).toBe(1)
+    expect(observed.bar).toBe(1)
+    // delete
+    delete original.foo
+    expect('foo' in original).toBe(false)
+    expect('foo' in observed).toBe(false)
+  })
 
-  // test('setting a property with an unobserved value should wrap with reactive', () => {
-  //   const observed = reactive<{ foo?: object }>({})
-  //   const raw = {}
-  //   observed.foo = raw
-  //   expect(observed.foo).not.toBe(raw)
-  //   expect(isReactive(observed.foo)).toBe(true)
-  // })
+  test('setting a property with an unobserved value should wrap with reactive', () => {
+    const observed = reactive({})
+    const raw = {}
+    observed.foo = raw
+    expect(observed.foo).not.toBe(raw)
+    expect(isReactive(observed.foo)).toBe(true)
+  })
 
-  // test('observing already observed value should return same Proxy', () => {
-  //   const original = { foo: 1 }
-  //   const observed = reactive(original)
-  //   const observed2 = reactive(observed)
-  //   expect(observed2).toBe(observed)
-  // })
+  test('observing already observed value should return same Proxy', () => {
+    const original = { foo: 1 }
+    const observed = reactive(original)
+    const observed2 = reactive(observed)
+    expect(observed2).toBe(observed)
+  })
 
-  // test('observing the same value multiple times should return same Proxy', () => {
-  //   const original = { foo: 1 }
-  //   const observed = reactive(original)
-  //   const observed2 = reactive(original)
-  //   expect(observed2).toBe(observed)
-  // })
+  test('observing the same value multiple times should return same Proxy', () => {
+    const original = { foo: 1 }
+    const observed = reactive(original)
+    const observed2 = reactive(original)
+    expect(observed2).toBe(observed)
+  })
 
-  // test('should not pollute original object with Proxies', () => {
-  //   const original: any = { foo: 1 }
-  //   const original2 = { bar: 2 }
-  //   const observed = reactive(original)
-  //   const observed2 = reactive(original2)
-  //   observed.bar = observed2
-  //   expect(observed.bar).toBe(observed2)
-  //   expect(original.bar).toBe(original2)
-  // })
+  test('should not pollute original object with Proxies', () => {
+    const original: any = { foo: 1 }
+    const original2 = { bar: 2 }
+    ;(globalThis as any).original2 = original2
+    const observed = reactive(original)
+    const observed2 = reactive(original2)
+    observed.bar = observed2
+    // original.bar = original2
+    expect(observed.bar).toBe(observed2)
+    expect(original.bar).toBe(original2)
+  })
 
-  // // #1246
-  // test('mutation on objects using reactive as prototype should not trigger', () => {
-  //   const observed = reactive({ foo: 1 })
-  //   const original = Object.create(observed)
-  //   let dummy
-  //   effect(() => (dummy = original.foo))
-  //   expect(dummy).toBe(1)
-  //   observed.foo = 2
-  //   expect(dummy).toBe(2)
-  //   original.foo = 3
-  //   expect(dummy).toBe(2)
-  //   original.foo = 4
-  //   expect(dummy).toBe(2)
-  // })
+  // #1246
+  test('mutation on objects using reactive as prototype should not trigger', () => {
+    const observed = reactive({ foo: 1 })
+    const original = Object.create(observed)
+    let dummy
+    effect(() => (dummy = original.foo))
+    expect(dummy).toBe(1)
+    observed.foo = 2
+    console.log('dummy', dummy)
+    expect(dummy).toBe(2)
+    original.foo = 3
+    expect(dummy).toBe(2)
+    original.foo = 4
+    expect(dummy).toBe(2)
+  })
 
-  // test('toRaw', () => {
-  //   const original = { foo: 1 }
-  //   const observed = reactive(original)
-  //   expect(toRaw(observed)).toBe(original)
-  //   expect(toRaw(original)).toBe(original)
-  // })
+  test('toRaw', () => {
+    const original = { foo: 1 }
+    const observed = reactive(original)
+    expect(toRaw(observed)).toBe(original)
+    expect(toRaw(original)).toBe(original)
+  })
 
-  // test('toRaw on object using reactive as prototype', () => {
-  //   const original = { foo: 1 }
-  //   const observed = reactive(original)
-  //   const inherted = Object.create(observed)
-  //   expect(toRaw(inherted)).toBe(inherted)
-  // })
+  test('toRaw on object using reactive as prototype', () => {
+    const original = { foo: 1 }
+    const observed = reactive(original)
+    console.log(toRaw(observed))
+    const inherted = Object.create(observed)
+    expect(toRaw(inherted)).toBe(inherted)
+  })
 
-  // test('toRaw on user Proxy wrapping reactive', () => {
-  //   const original = {}
-  //   const re = reactive(original)
-  //   const obj = new Proxy(re, {})
-  //   const raw = toRaw(obj)
-  //   expect(raw).toBe(original)
-  // })
+  test('toRaw on user Proxy wrapping reactive', () => {
+    const original = {}
+    const re = reactive(original)
+    const obj = new Proxy(re, {})
+    const raw = toRaw(obj)
+    expect(raw).toBe(original)
+  })
 
-  // test('should not unwrap Ref<T>', () => {
-  //   const observedNumberRef = reactive(ref(1))
-  //   const observedObjectRef = reactive(ref({ foo: 1 }))
+  test('should not unwrap Ref<T>', () => {
+    const observedNumberRef = reactive(ref(1))
+    const observedObjectRef = reactive(ref({ foo: 1 }))
 
-  //   expect(isRef(observedNumberRef)).toBe(true)
-  //   expect(isRef(observedObjectRef)).toBe(true)
-  // })
+    expect(isRef(observedNumberRef)).toBe(true)
+    expect(isRef(observedObjectRef)).toBe(true)
+  })
 
-  // test('should unwrap computed refs', () => {
-  //   // readonly
-  //   const a = computed(() => 1)
-  //   // writable
-  //   const b = computed({
-  //     get: () => 1,
-  //     set: () => {},
-  //   })
-  //   const obj = reactive({ a, b })
-  //   // check type
-  //   obj.a + 1
-  //   obj.b + 1
-  //   expect(typeof obj.a).toBe(`number`)
-  //   expect(typeof obj.b).toBe(`number`)
-  // })
+  test('should unwrap computed refs', () => {
+    // readonly
+    const a = computed(() => 1)
+    // writable
+    const b = computed({
+      get: () => 1,
+      set: () => {},
+    })
+    const obj = reactive({ a, b })
+    // check type
+    obj.a + 1
+    obj.b + 1
+    console.log(obj.a)
+    expect(typeof obj.a).toBe(`number`)
+    expect(typeof obj.b).toBe(`number`)
+  })
 
-  // test('should allow setting property from a ref to another ref', () => {
-  //   const foo = ref(0)
-  //   const bar = ref(1)
-  //   const observed = reactive({ a: foo })
-  //   const dummy = computed(() => observed.a)
-  //   expect(dummy.value).toBe(0)
+  test('should allow setting property from a ref to another ref', () => {
+    const foo = ref(0)
+    const bar = ref(1)
+    const observed = reactive({ a: foo })
+    const dummy = computed(() => observed.a)
+    expect(dummy.value).toBe(0)
 
-  //   // @ts-expect-error
-  //   observed.a = bar
-  //   expect(dummy.value).toBe(1)
+    observed.a = bar
+    expect(dummy.value).toBe(1)
 
-  //   bar.value++
-  //   expect(dummy.value).toBe(2)
-  // })
+    bar.value++
+    expect(dummy.value).toBe(2)
+  })
 
   // test('non-observable values', () => {
   //   const assertValue = (value: any) => {
@@ -268,38 +272,38 @@ describe('reactivity/reactive', () => {
   //   expect(reactive(d)).toBe(d)
   // })
 
-  // test('markRaw', () => {
-  //   const obj = reactive({
-  //     foo: { a: 1 },
-  //     bar: markRaw({ b: 2 }),
-  //   })
-  //   expect(isReactive(obj.foo)).toBe(true)
-  //   expect(isReactive(obj.bar)).toBe(false)
-  // })
+  test('markRaw', () => {
+    const obj = reactive({
+      foo: { a: 1 },
+      bar: markRaw({ b: 2 }),
+    })
+    expect(isReactive(obj.foo)).toBe(true)
+    expect(isReactive(obj.bar)).toBe(false)
+  })
 
-  // test('markRaw should skip non-extensible objects', () => {
-  //   const obj = Object.seal({ foo: 1 })
-  //   expect(() => markRaw(obj)).not.toThrowError()
-  // })
+  test('markRaw should skip non-extensible objects', () => {
+    const obj = Object.seal({ foo: 1 })
+    expect(() => markRaw(obj)).not.toThrowError()
+  })
 
-  // test('should not observe non-extensible objects', () => {
-  //   const obj = reactive({
-  //     foo: Object.preventExtensions({ a: 1 }),
-  //     // sealed or frozen objects are considered non-extensible as well
-  //     bar: Object.freeze({ a: 1 }),
-  //     baz: Object.seal({ a: 1 }),
-  //   })
-  //   expect(isReactive(obj.foo)).toBe(false)
-  //   expect(isReactive(obj.bar)).toBe(false)
-  //   expect(isReactive(obj.baz)).toBe(false)
-  // })
+  test('should not observe non-extensible objects', () => {
+    const obj = reactive({
+      foo: Object.preventExtensions({ a: 1 }),
+      // sealed or frozen objects are considered non-extensible as well
+      bar: Object.freeze({ a: 1 }),
+      baz: Object.seal({ a: 1 }),
+    })
+    expect(isReactive(obj.foo)).toBe(false)
+    expect(isReactive(obj.bar)).toBe(false)
+    expect(isReactive(obj.baz)).toBe(false)
+  })
 
-  // test('should not observe objects with __v_skip', () => {
-  //   const original = {
-  //     foo: 1,
-  //     __v_skip: true,
-  //   }
-  //   const observed = reactive(original)
-  //   expect(isReactive(observed)).toBe(false)
-  // })
+  test('should not observe objects with __v_skip', () => {
+    const original = {
+      foo: 1,
+      __v_skip: true,
+    }
+    const observed = reactive(original)
+    expect(isReactive(observed)).toBe(false)
+  })
 })

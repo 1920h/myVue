@@ -1,29 +1,75 @@
-import { isFunction, isObject } from "../share"
+import { def, hasOwn, isObject } from "../share"
+import { baseHandlers } from "./baseHandlers"
+import { collectionHandlers } from './collectionHandlers'
+import { isRef } from "./ref"
 
-const ReactiveFlag = Symbol('reactive')
+enum TargetType{
+    COMMOM,
+    COLLECTION,
+    INVALID
+}
+
+export const ReactiveFlag = Symbol('reactive')
+export const ReactiveRaw = Symbol('reactiveRaw')
+export const ReactiveSkip = "__v_skip"
+const ReactiveMap = new WeakMap()
+
+function toString(target:any){
+    return Object.prototype.toString.call(target).slice(8, -1)
+}
+
+function targetTypeMap(rawType: string){
+    switch(rawType){
+        case 'Object':
+        case 'Array':
+            return TargetType.COMMOM
+        case 'Map':
+        case 'Set':
+        case 'WeakMap':
+        case 'WeakSet':
+            return TargetType.COLLECTION
+        default:
+            return TargetType.INVALID
+    }
+}
+
+function getTargetType(target: any){
+    return (target[ReactiveSkip] || !Object.isExtensible(target))
+    ? TargetType.INVALID : targetTypeMap(toString(target))
+}
 
 function reactive(obj: any){
-    return new Proxy(obj, {
-        get(target, key, receiver){
-            if(key === ReactiveFlag) return true
-            const res = Reflect.get(target, key, receiver)
-            console.log('res', res)
-            return isObject(res) ? reactive(res as Object) : isFunction(res) ? res.bind(target) : res
-        },
-        set(target, key, value, receiver){
-            return Reflect.set(target, key, value, receiver)
-        },
-        apply(target, thisArg, argArray){
-            console.log('apply', argArray)
-            return Reflect.apply(target, thisArg, argArray)
-        }
-    })
+    if(!isObject(obj) || isRef(obj)) return obj
+    if(isReactive(obj)) return obj
+    if(getTargetType(obj) === TargetType.INVALID) return obj
+    if(ReactiveMap.has(obj)) return ReactiveMap.get(obj)
+    const proxy = new Proxy(obj, targetTypeMap(toString(obj)) === TargetType.COMMOM ? baseHandlers : collectionHandlers)
+    ReactiveMap.set(obj, proxy)
+    return proxy
 }
 
 function isReactive(obj: any){
-    console.log(obj)
     return obj && !!obj[ReactiveFlag]
 }
 
+function isShallow(obj: any){
 
-export { reactive, isReactive }
+}
+
+function isReadonly(obj: any): boolean{
+    return true
+}
+
+function toRaw(obj: any): any{
+    const raw = obj && obj[ReactiveRaw]
+    return raw ? raw : obj
+}
+
+function markRaw(obj: any){
+    if(!hasOwn(obj, ReactiveSkip) && Object.isExtensible(obj)){
+        def(obj, ReactiveSkip, true)
+    }
+    return obj
+}
+
+export { reactive, isReactive, toRaw, markRaw, isShallow, isReadonly }

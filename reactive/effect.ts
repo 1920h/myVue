@@ -11,15 +11,15 @@ export function setActiveEffect(effect: any){
 }
 
 export function track(target: any, key: any){
-    let map = targetMap.get(target)
-    if(!map){
-        targetMap.set(target, map = new Map())
-    }
-    let deps = map.get(key)
-    if(!deps){
-        map.set(key, (deps = new Set()))
-    }
     if(activeEffect){
+        let map = targetMap.get(target)
+        if(!map){
+            targetMap.set(target, map = new Map())
+        }
+        let deps = map.get(key)
+        if(!deps){
+            map.set(key, (deps = new Set()))
+        }
         deps.add(activeEffect)
     }
 }

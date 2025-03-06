@@ -29,6 +29,12 @@ export const def = (
       writable,
       value,
     })
-  }
+}
+
+export function isIntergerKey(key: any){
+    return typeof key === 'string' &&
+    key !== 'NaN' && key[0] != '-' &&
+    parseInt(key, 10) + '' === key
+}
 
 export function noop(){}

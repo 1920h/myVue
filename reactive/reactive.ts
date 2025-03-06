@@ -72,4 +72,8 @@ function markRaw(obj: any){
     return obj
 }
 
-export { reactive, isReactive, toRaw, markRaw, isShallow, isReadonly }
+function toReactive(obj: any){
+    return isObject(obj) ? reactive(obj) : obj
+}
+
+export { reactive, isReactive, toRaw, markRaw, isShallow, isReadonly, toReactive }

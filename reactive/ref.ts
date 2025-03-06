@@ -1,6 +1,6 @@
 import { isObject } from "../share"
 import { track, trigger } from "./effect"
-import { reactive } from "./reactive"
+import { reactive, toReactive } from "./reactive"
 
 export type Ref<T> = {
     value: T
@@ -9,6 +9,7 @@ export type Ref<T> = {
 export const ISREFSYMBOL = Symbol('isRef')
 
 export function isRef(obj: any): Ref<any>{
+    // console.log('isref',obj, obj[ISREFSYMBOL])
     return obj && !!obj[ISREFSYMBOL]
 }
 
@@ -38,6 +39,7 @@ export function toRefs<T>(obj: T): T{
 }
 
 function createRef(val: any){
+    if(isRef(val)) return val
     return new RefImpl(val)
 }
 
@@ -49,19 +51,20 @@ class RefImpl{
 
     constructor(value: any){
         this._rawValue = value
-        this._value = isObject(value) ? reactive(value) : value
+        this._value = toReactive(value)
     }
 
     get value(){
-        console.log('get value', this._value)
         track(this, "value")
         return this._value
     }
 
     set value(newValue: any){
-        this._rawValue = newValue
-        this._value = isObject(newValue) ? reactive(newValue) : newValue
-        trigger(this, "value")
+        if(newValue !== this._rawValue){
+            this._rawValue = newValue
+            this._value = isObject(newValue) ? reactive(newValue) : newValue
+            trigger(this, "value")
+        }
     }
 
 }

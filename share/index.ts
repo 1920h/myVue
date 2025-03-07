@@ -37,4 +37,18 @@ export function isIntergerKey(key: any){
     parseInt(key, 10) + '' === key
 }
 
+export function isSymbol(val: any){
+    return typeof val === 'symbol'
+}
+
+export const NO = () => false
+
+export function defaultOnError(error: any): never {
+    throw error
+  }
+
+export function defaultOnWarn(msg: any): void {
+  console.warn(`[Vue warn] ${msg.message}`)
+}
+
 export function noop(){}

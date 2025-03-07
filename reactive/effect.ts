@@ -1,4 +1,17 @@
 
+export enum EffectFlags {
+    /**
+     * ReactiveEffect only
+     */
+    ACTIVE = 1 << 0,
+    RUNNING = 1 << 1,
+    TRACKING = 1 << 2,
+    NOTIFIED = 1 << 3,
+    DIRTY = 1 << 4,
+    ALLOW_RECURSE = 1 << 5,
+    PAUSED = 1 << 6,
+  }
+
 export let activeEffect: any = null
 const targetMap = new WeakMap()
 
@@ -43,4 +56,12 @@ export function effect(fn: Function){
     }finally{
         activeEffect = prevActiveEffect
     }
+}
+
+export function pauseTracking(){
+
+}
+
+export function resetTracking(){
+
 }

@@ -11,6 +11,7 @@ enum TargetType{
 
 export const ReactiveFlag = Symbol('reactive')
 export const ReactiveRaw = Symbol('reactiveRaw')
+export const ReactiveShallow = "__v_isShallow"
 export const ReactiveSkip = "__v_skip"
 const ReactiveMap = new WeakMap()
 
@@ -38,6 +39,7 @@ function getTargetType(target: any){
     ? TargetType.INVALID : targetTypeMap(toString(target))
 }
 
+function reactive<T>(obj: T) : T
 function reactive(obj: any){
     if(!isObject(obj) || isRef(obj)) return obj
     if(isReactive(obj)) return obj
@@ -53,7 +55,7 @@ function isReactive(obj: any){
 }
 
 function isShallow(obj: any){
-
+    return obj && !!obj[ReactiveShallow]
 }
 
 function isReadonly(obj: any): boolean{
